@@ -8,7 +8,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 const port = process.env.PORT || 5000;
 
-console.log("🔥 Server is starting...");
+console.log("Server is starting...");
 
 // Middleware
 app.use(cookieParser());
@@ -36,16 +36,16 @@ const client = new MongoClient(uri, {
 // JWT Authentication Middleware
 const verifyToken = (req, res, next) => {
     const token = req.cookies?.token;
-    console.log("🔑 Verifying JWT Token:", token);
+    console.log(" Verifying JWT Token:", token);
 
     if (!token) {
-        console.log("❌ No token found");
+        console.log(" No token found");
         return res.status(401).json({ message: "Unauthorized access" });
     }
 
     jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
         if (err) {
-            console.log("❌ Token verification failed:", err.message);
+            console.log("Token verification failed:", err.message);
             return res.status(401).json({ message: "Unauthorized access" });
         }
         console.log("✅ Token verified:", decoded);
@@ -67,7 +67,7 @@ app.post("/jwt", async (req, res) => {
     console.log("📜 Generating JWT for:", user);
 
     if (!user || !user.email) {
-        console.log("❌ Invalid user data:", user);
+        console.log("Invalid user data:", user);
         return res.status(400).json({ error: "Invalid user data" });
     }
 
@@ -87,30 +87,30 @@ app.post("/jwt", async (req, res) => {
 async function run() {
     try {
         await client.connect();
-        console.log("✅ Connected to MongoDB!");
+        console.log("Connected to MongoDB!");
 
         const database = client.db("TaskDB");
         const tasksCollection = database.collection("tasks");
 
         // ✅ Get All Tasks
         app.get("/tasks", async (req, res) => {
-            console.log("📦 Fetching all tasks...");
+            console.log(" Fetching all tasks...");
             const tasks = await tasksCollection.find().toArray();
-            console.log(`✅ Retrieved ${tasks.length} tasks`);
+            console.log(`Retrieved ${tasks.length} tasks`);
             res.send(tasks);
         });
 
         // ✅ Create a Task
         app.post("/tasks", async (req, res) => {
-            console.log("➕ Adding new task:", req.body);
+            console.log("Adding new task:", req.body);
             const { title, description, category } = req.body;
 
             if (!title || title.length > 50) {
-                console.log("❌ Invalid title length");
+                console.log("Invalid title length");
                 return res.status(400).json({ error: "Title is required (max 50 chars)" });
             }
             if (description && description.length > 200) {
-                console.log("❌ Description too long");
+                console.log("Description too long");
                 return res.status(400).json({ error: "Description max 200 chars" });
             }
 
@@ -129,10 +129,10 @@ async function run() {
         // ✅ Update Task (Drag & Drop, Reorder, Edit)
         app.put("/tasks/:id", async (req, res) => {
             const { id } = req.params;
-            console.log("✏️ Updating task:", id, req.body);
+            console.log("Updating task:", id, req.body);
 
             if (!ObjectId.isValid(id)) {
-                console.log("❌ Invalid Task ID");
+                console.log("Invalid Task ID");
                 return res.status(400).json({ error: "Invalid Task ID" });
             }
 
@@ -146,27 +146,27 @@ async function run() {
                 { $set: updateData }
             );
 
-            console.log("✅ Task updated:", result);
+            console.log("Task updated:", result);
             res.json(result);
         });
 
         // ✅ Delete a Task
         app.delete("/tasks/:id", async (req, res) => {
             const { id } = req.params;
-            console.log("🗑️ Deleting task:", id);
+            console.log("Deleting task:", id);
 
             if (!ObjectId.isValid(id)) {
-                console.log("❌ Invalid Task ID");
+                console.log("Invalid Task ID");
                 return res.status(400).json({ error: "Invalid Task ID" });
             }
 
             const result = await tasksCollection.deleteOne({ _id: new ObjectId(id) });
-            console.log("✅ Task deleted:", result);
+            console.log("Task deleted:", result);
             res.json(result);
         });
 
     } catch (error) {
-        console.error("❌ Connection error:", error);
+        console.error("Connection error:", error);
     }
 }
 
@@ -174,8 +174,8 @@ run().catch(console.dir);
 
 // Start Server
 app.get("/", (req, res) => {
-    console.log("🏠 Root route accessed");
+    console.log("Root route accessed");
     res.send("Task Management API is running");
 });
 
-app.listen(port, () => console.log(`🚀 Server running on port: ${port}`));
+app.listen(port, () => console.log(`Server running on port: ${port}`));
