@@ -92,16 +92,16 @@ async function run() {
         const database = client.db("TaskDB");
         const tasksCollection = database.collection("tasks");
 
-        // ✅ Get All Tasks
-        app.get("/tasks", async (req, res) => {
-            console.log(" Fetching all tasks...");
-            const tasks = await tasksCollection.find().toArray();
+        // ✅ Get Tasks (Filtered by User)
+        app.get("/tasks", verifyToken, async (req, res) => {
+            console.log("Fetching tasks for user:", req.user.email);
+            const tasks = await tasksCollection.find({ userId: req.user.email }).toArray();
             console.log(`Retrieved ${tasks.length} tasks`);
             res.send(tasks);
         });
 
-        // ✅ Create a Task
-        app.post("/tasks", async (req, res) => {
+        // ✅ Create a Task (With User ID)
+        app.post("/tasks", verifyToken, async (req, res) => {
             console.log("Adding new task:", req.body);
             const { title, description, category } = req.body;
 
@@ -118,7 +118,8 @@ async function run() {
                 title,
                 description: description || "",
                 category: category || "To-Do",
-                timestamp: new Date()
+                timestamp: new Date(),
+                userId: req.user.email  // Assign task to logged-in user
             };
 
             const result = await tasksCollection.insertOne(newTask);
@@ -126,14 +127,20 @@ async function run() {
             res.json(result);
         });
 
-        // ✅ Update Task (Drag & Drop, Reorder, Edit)
-        app.put("/tasks/:id", async (req, res) => {
+        // ✅ Update Task (Only Task Owner Can Edit)
+        app.put("/tasks/:id", verifyToken, async (req, res) => {
             const { id } = req.params;
             console.log("Updating task:", id, req.body);
 
             if (!ObjectId.isValid(id)) {
                 console.log("Invalid Task ID");
                 return res.status(400).json({ error: "Invalid Task ID" });
+            }
+
+            // Ensure only task owner can edit
+            const task = await tasksCollection.findOne({ _id: new ObjectId(id) });
+            if (!task || task.userId !== req.user.email) {
+                return res.status(403).json({ error: "Unauthorized action" });
             }
 
             const updateData = {};
@@ -150,14 +157,20 @@ async function run() {
             res.json(result);
         });
 
-        // ✅ Delete a Task
-        app.delete("/tasks/:id", async (req, res) => {
+        // ✅ Delete a Task (Only Task Owner Can Delete)
+        app.delete("/tasks/:id", verifyToken, async (req, res) => {
             const { id } = req.params;
             console.log("Deleting task:", id);
 
             if (!ObjectId.isValid(id)) {
                 console.log("Invalid Task ID");
                 return res.status(400).json({ error: "Invalid Task ID" });
+            }
+
+            // Ensure only task owner can delete
+            const task = await tasksCollection.findOne({ _id: new ObjectId(id) });
+            if (!task || task.userId !== req.user.email) {
+                return res.status(403).json({ error: "Unauthorized action" });
             }
 
             const result = await tasksCollection.deleteOne({ _id: new ObjectId(id) });
@@ -178,4 +191,4 @@ app.get("/", (req, res) => {
     res.send("Task Management API is running");
 });
 
-app.listen(port, () => console.log(`Server running on port: ${port}`));
+app.listen(port, () => console.log(`🚀 Server running on port: ${port}`));
